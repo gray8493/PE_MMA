@@ -1,0 +1,81 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isString(v) {
+      return v is string;
+    }
+
+    function isTimestamp(v) {
+      return v is timestamp;
+    }
+
+    function requiredText(v, maxLen) {
+      return isString(v) && v.trim().size() > 0 && v.size() <= maxLen;
+    }
+
+    function optionalText(v, maxLen) {
+      return !(v in request.resource.data) || v == null
+        || (isString(v) && v.size() <= maxLen);
+    }
+
+    function optionalIntRating(v) {
+      return !(v in request.resource.data) || v == null
+        || (v is int && v >= 0 && v <= 5);
+    }
+
+    function optionalBool(v) {
+      return !(v in request.resource.data) || v == null || v is bool;
+    }
+
+    function optionalTimestamp(v) {
+      return !(v in request.resource.data) || v == null || isTimestamp(v);
+    }
+
+    function validBook() {
+      return
+        // every book belongs to the person who saved it
+        request.resource.data.userId == request.auth.uid &&
+        isString(request.resource.data.userId) &&
+        // title: required, <= 100 chars
+        requiredText(request.resource.data.title, 100) &&
+        // author: required, <= 60 chars
+        requiredText(request.resource.data.author, 60) &&
+        // genre: one of the four allowed values
+        request.resource.data.genre in ['Fiction', 'Non-Fiction', 'Academic', 'Other'] &&
+        // status: one of the three allowed values
+        request.resource.data.status in ['To Read', 'Reading', 'Finished'] &&
+        // rating: optional whole number 0-5
+        optionalIntRating(request.resource.data.rating) &&
+        // favorite: optional boolean
+        optionalBool(request.resource.data.favorite) &&
+        // notes: optional text <= 300 chars
+        optionalText(request.resource.data.notes, 300) &&
+        // createdAt: optional timestamp
+        optionalTimestamp(request.resource.data.createdAt);
+    }
+
+    match /books/{bookId} {
+      // read, add, change, delete: only your own rows
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if signedIn() && validBook();
+
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && validBook();
+
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // everything else: nothing for anyone
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
