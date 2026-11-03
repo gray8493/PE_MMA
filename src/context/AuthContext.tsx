@@ -12,6 +12,11 @@ import { auth } from '@/lib/firebase';
 type AuthContextValue = {
   user: User | null;
   authLoading: boolean;
+  // True from the start of a sign-up until the success message has been seen.
+  // Signing up also logs the user in, and without this every screen would
+  // leave for the list before Registration successful could be shown.
+  registering: boolean;
+  finishRegistering: () => void;
   signUp: (email: string, password: string) => Promise<User>;
   signIn: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
@@ -22,6 +27,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -35,13 +41,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       authLoading,
+      registering,
+      finishRegistering: () => setRegistering(false),
       signUp: async (email, password) => {
-        const credential = await createUserWithEmailAndPassword(
-          auth,
-          email,
-          password,
-        );
-        return credential.user;
+        setRegistering(true);
+        try {
+          const credential = await createUserWithEmailAndPassword(
+            auth,
+            email,
+            password,
+          );
+          return credential.user;
+        } catch (err) {
+          setRegistering(false);
+          throw err;
+        }
       },
       signIn: async (email, password) => {
         const credential = await signInWithEmailAndPassword(
@@ -55,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await firebaseSignOut(auth);
       },
     }),
-    [user, authLoading],
+    [user, authLoading, registering],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

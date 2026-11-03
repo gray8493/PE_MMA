@@ -1,5 +1,7 @@
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import * as firebaseAuth from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 function required(name: string, value: string | undefined): string {
@@ -40,5 +42,27 @@ export const app = getApps().length
   ? getApps()[0]
   : initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
+function createAuth(): firebaseAuth.Auth {
+  if (Platform.OS === 'web') {
+    return firebaseAuth.getAuth(app);
+  }
+  // Only the React Native build of firebase/auth has this export, and the
+  // package's public types do not declare it. Without it, phones forget the
+  // login every time the app restarts.
+  const { getReactNativePersistence } = firebaseAuth as unknown as {
+    getReactNativePersistence: (
+      storage: typeof AsyncStorage,
+    ) => firebaseAuth.Persistence;
+  };
+  try {
+    return firebaseAuth.initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  } catch {
+    // Fast Refresh re-runs this module after auth was already initialized.
+    return firebaseAuth.getAuth(app);
+  }
+}
+
+export const auth = createAuth();
 export const db = getFirestore(app);

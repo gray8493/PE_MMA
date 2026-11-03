@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TextInput, type TextInputProps } from 'react-native';
+import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { colors, fontSize, radius, spacing } from '@/theme';
 
 type Props = TextInputProps & {
@@ -14,7 +14,7 @@ export default function TextField({
   ...inputProps
 }: Props) {
   return (
-    <>
+    <View>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         testID={testID}
@@ -22,8 +22,12 @@ export default function TextField({
         placeholderTextColor={colors.muted}
         {...inputProps}
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-    </>
+      {error ? (
+        <Text testID={testID ? `${testID}-error` : undefined} style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 

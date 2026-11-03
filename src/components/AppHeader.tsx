@@ -12,7 +12,7 @@ export default function AppHeader({ title, right, left }: Props) {
   return (
     <View style={styles.header}>
       {left ? <View style={styles.side}>{left}</View> : null}
-      <Text style={[styles.title, left && right ? styles.center : null]} numberOfLines={1}>
+      <Text style={[styles.title, left && right ? styles.center : null]}>
         {title}
       </Text>
       {right ? <View style={styles.side}>{right}</View> : null}
@@ -25,12 +25,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.sm,
     minHeight: 56,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     backgroundColor: colors.bg,
   },
   side: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -39,7 +41,8 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: '700',
     color: colors.text,
-    flexShrink: 1,
+    flex: 1,
+    minWidth: 0,
   },
   center: {
     textAlign: 'center',

@@ -12,6 +12,7 @@ import {
   validateEmail,
   validateRegisterPassword,
 } from '@/lib/validation';
+import { useRedirectWhen } from '@/lib/useRedirectWhen';
 import { colors, fontSize, spacing } from '@/theme';
 
 const REDIRECT_DELAY_MS = 2200;
@@ -23,7 +24,7 @@ type FieldErrors = {
 };
 
 export default function RegisterScreen() {
-  const { user, authLoading, signUp } = useAuth();
+  const { user, authLoading, registering, finishRegistering, signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,6 +42,8 @@ export default function RegisterScreen() {
       }
     };
   }, []);
+
+  useRedirectWhen(!authLoading && Boolean(user) && !registering, '/list');
 
   function runValidation(
     nextEmail: string,
@@ -72,9 +75,7 @@ export default function RegisterScreen() {
     try {
       await signUp(email.trim(), password);
       setSuccess('Registration successful');
-      redirectTimer.current = setTimeout(() => {
-        router.replace('/list');
-      }, REDIRECT_DELAY_MS);
+      redirectTimer.current = setTimeout(finishRegistering, REDIRECT_DELAY_MS);
     } catch (err) {
       setAuthError(cleanFirebaseError(err));
     } finally {
@@ -82,7 +83,7 @@ export default function RegisterScreen() {
     }
   }
 
-  if (authLoading || user) {
+  if (authLoading || (user && !registering)) {
     return null;
   }
 

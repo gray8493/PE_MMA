@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import AppHeader from '@/components/AppHeader';
@@ -11,10 +11,11 @@ import {
   validateEmail,
   validateLoginPassword,
 } from '@/lib/validation';
+import { useRedirectWhen } from '@/lib/useRedirectWhen';
 import { colors, fontSize, spacing } from '@/theme';
 
 export default function LoginScreen() {
-  const { user, authLoading, signIn } = useAuth();
+  const { user, authLoading, registering, signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -22,11 +23,7 @@ export default function LoginScreen() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.replace('/list');
-    }
-  }, [authLoading, user]);
+  useRedirectWhen(!authLoading && Boolean(user) && !registering, '/list');
 
   function runValidation(nextEmail: string, nextPassword: string) {
     setErrors({
@@ -49,7 +46,6 @@ export default function LoginScreen() {
     setBusy(true);
     try {
       await signIn(email.trim(), password);
-      router.replace('/list');
     } catch (err) {
       setAuthError(cleanFirebaseError(err));
     } finally {

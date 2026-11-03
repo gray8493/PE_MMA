@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import AppHeader from '@/components/AppHeader';
@@ -6,31 +5,28 @@ import Card from '@/components/Card';
 import PrimaryButton from '@/components/PrimaryButton';
 import Screen from '@/components/Screen';
 import { useAuth } from '@/context/AuthContext';
+import { useRedirectWhen } from '@/lib/useRedirectWhen';
 import { colors, fontSize, spacing } from '@/theme';
 
 const FEATURES = [
   {
-    title: 'Track your books',
-    description: 'Add every book you own or want to read in one private list.',
+    title: 'Track what you watch',
+    description: 'Keep every movie you want to see in one private watchlist.',
   },
   {
     title: 'Sort by status',
-    description: 'Organize your books by To Read, Reading, and Finished.',
+    description: 'Organize your movies by Plan to Watch, Watching and Watched.',
   },
   {
     title: 'Rate your favorites',
-    description: 'Rate each book from 0 to 5 and star the ones you love.',
+    description: 'Rate each movie from 0 to 5 and star the ones you love.',
   },
 ];
 
 export default function HomeScreen() {
-  const { user, authLoading } = useAuth();
+  const { user, authLoading, registering } = useAuth();
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.replace('/list');
-    }
-  }, [authLoading, user]);
+  useRedirectWhen(!authLoading && Boolean(user) && !registering, '/list');
 
   if (authLoading || user) {
     return null;
@@ -39,7 +35,7 @@ export default function HomeScreen() {
   return (
     <Screen>
       <AppHeader
-        title="BookShelf"
+        title="CineList"
         right={
           <>
             <PrimaryButton
@@ -58,12 +54,11 @@ export default function HomeScreen() {
       />
       <ScrollView contentContainerStyle={styles.content}>
         <Text testID="home-title" style={styles.homeTitle}>
-          BookShelf
+          CineList
         </Text>
         <Text style={styles.description}>
-          A small mobile app where you keep your own private list of books you
-          own or want to read, sorted into reading statuses and genres, with a
-          favorite flag.
+          A small mobile app where you keep your own private movie watchlist,
+          with genres, watch statuses, ratings, notes and a favorite flag.
         </Text>
         <View style={styles.features}>
           {FEATURES.map((feature) => (
